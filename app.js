@@ -2,6 +2,8 @@ const boardEl = document.querySelector("#board");
 const modeEl = document.querySelector("#mode");
 const colorEl = document.querySelector("#color");
 const difficultyEl = document.querySelector("#difficulty");
+const boardThemeEl = document.querySelector("#boardTheme");
+const pieceStyleEl = document.querySelector("#pieceStyle");
 const newGameEl = document.querySelector("#newGame");
 const turnTextEl = document.querySelector("#turnText");
 const gameTextEl = document.querySelector("#gameText");
@@ -12,6 +14,7 @@ const symbols = {
   wk: cp(0x2654), wq: cp(0x2655), wr: cp(0x2656), wb: cp(0x2657), wn: cp(0x2658), wp: cp(0x2659),
   bk: cp(0x265a), bq: cp(0x265b), br: cp(0x265c), bb: cp(0x265d), bn: cp(0x265e), bp: cp(0x265f)
 };
+const pieceLetters = { k: "K", q: "Q", r: "R", b: "B", n: "N", p: "P" };
 
 const pieceValue = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
 const files = "abcdefgh";
@@ -75,12 +78,25 @@ function squareName(r, c) {
   return `${files[c]}${8 - r}`;
 }
 
+function pieceLabel(piece) {
+  if (!piece) return "";
+  if (pieceStyleEl.value === "classic" || pieceStyleEl.value === "carved") return symbols[piece];
+  const letter = pieceLetters[typeOf(piece)];
+  return colorOf(piece) === "w" ? letter : letter.toLowerCase();
+}
+
+function applyVisualStyle() {
+  document.body.dataset.board = boardThemeEl.value;
+  document.body.dataset.pieces = pieceStyleEl.value;
+}
+
 function orientation() {
   if (modeEl.value === "human") return state.turn === "w" ? "w" : "b";
   return colorEl.value === "white" ? "w" : "b";
 }
 
 function render() {
+  applyVisualStyle();
   boardEl.innerHTML = "";
   const view = orientation();
   const rows = view === "w" ? [...Array(8).keys()] : [...Array(8).keys()].reverse();
@@ -96,8 +112,14 @@ function render() {
       button.className = `square ${(r + c) % 2 ? "dark" : "light"}`;
       button.dataset.r = r;
       button.dataset.c = c;
-      button.setAttribute("aria-label", `${squareName(r, c)} ${piece ? symbols[piece] : "empty"}`);
-      button.textContent = piece ? symbols[piece] : "";
+      button.setAttribute("aria-label", `${squareName(r, c)} ${piece ? pieceLabel(piece) : "empty"}`);
+      if (piece) {
+        button.classList.add(colorOf(piece) === "w" ? "piece-white" : "piece-black");
+        const label = document.createElement("span");
+        label.className = "piece-label";
+        label.textContent = pieceLabel(piece);
+        button.appendChild(label);
+      }
       if (selected && selected.r === r && selected.c === c) button.classList.add("selected");
       if (legal) {
         button.classList.add("legal");
@@ -492,5 +514,7 @@ function startGame() {
 modeEl.addEventListener("change", startGame);
 colorEl.addEventListener("change", startGame);
 difficultyEl.addEventListener("change", startGame);
+boardThemeEl.addEventListener("change", render);
+pieceStyleEl.addEventListener("change", render);
 newGameEl.addEventListener("click", startGame);
 startGame();
